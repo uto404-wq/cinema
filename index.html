@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>上映スケジュール</title>
+<meta name="theme-color" content="#c2410c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1f;--sub:#6b6b70;--line:#e4e2dc;--acc:#c2410c;--past:#c9c7c2;
+--t:#b91c1c;--p:#15803d;--s:#7c3aed}
+@media (prefers-color-scheme:dark){:root{--bg:#141414;--card:#1e1e1f;--ink:#f2f2f2;--sub:#a0a0a5;--line:#333;--past:#555;--acc:#fb923c;--t:#f87171;--p:#4ade80;--s:#a78bfa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 12px 8px;border-bottom:1px solid var(--line)}
+h1{font-size:17px;margin:0 0 2px}
+.meta{font-size:11px;color:var(--sub)}
+.row{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.row::-webkit-scrollbar{display:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.tab,.chip,.day{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;white-space:nowrap;font-size:13px}
+.tab.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip{display:flex;align-items:center;gap:6px}
+.chip .dot{width:9px;height:9px;border-radius:50%}
+.chip.off{opacity:.4}
+.day{display:flex;flex-direction:column;align-items:center;padding:5px 11px;border-radius:12px;min-width:50px;line-height:1.15}
+.day small{font-size:10px;color:var(--sub)}
+.day.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.day.on small{color:#fff}
+.day.sat small{color:#2563eb}.day.sun small{color:#dc2626}.day.on.sat small,.day.on.sun small{color:#fff}
+main{padding:10px 12px 40px}
+.tools{display:flex;align-items:center;gap:8px;margin:2px 0 10px;font-size:13px;color:var(--sub)}
+.tools label{display:flex;align-items:center;gap:5px}
+input[type=search]{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.th{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:700;border-bottom:1px solid var(--line)}
+.th .bar{width:4px;height:16px;border-radius:2px}
+.th a{margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)}
+.film{padding:9px 12px;border-bottom:1px solid var(--line)}
+.film:last-child{border-bottom:none}
+.ft{font-size:14px;font-weight:600;margin-bottom:5px}
+.ver{display:inline-block;font-size:10px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;color:var(--sub);vertical-align:1px}
+.times{display:flex;flex-wrap:wrap;gap:5px}
+.tm{font-variant-numeric:tabular-nums;font-size:13px;padding:3px 7px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
+.tm.past{color:var(--past);text-decoration:line-through}
+.fhead{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;width:100%;background:none;border:none;text-align:left}
+.fhead .n{font-weight:700;font-size:14px}
+.fhead .c{font-size:11px;color:var(--sub);white-space:nowrap;margin-left:8px}
+.fhead .dots{display:flex;gap:3px;margin-top:4px}
+.fhead .dots i{width:7px;height:7px;border-radius:50%;display:block}
+.fbody{padding:0 12px 10px;display:none}
+.card.open .fbody{display:block}
+.dt{font-size:12px;font-weight:700;color:var(--sub);margin:10px 0 4px}
+.line{display:flex;gap:8px;align-items:flex-start;margin-bottom:5px}
+.line .lb{font-size:11px;width:84px;flex:none;padding-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;white-space:nowrap}
+.line .lb .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.empty{color:var(--sub);text-align:center;padding:30px 0;font-size:13px}
+footer{font-size:11px;color:var(--sub);padding:0 12px 30px;line-height:1.6}
+footer a{color:var(--sub)}
+</style>
+</head>
+<body>
+<header>
+  <h1>なんば・心斎橋 上映スケジュール</h1>
+  <div class="meta" id="meta">読み込み中…</div>
+  <div class="row" id="tabs"></div>
+  <div class="row" id="theaters"></div>
+  <div class="row" id="days"></div>
+</header>
+<main id="main"></main>
+<footer>
+  データ出典：<span id="srcs"></span>（ジョルダン映画）。毎日自動更新。<br>
+  上映時刻は変更される場合があります。予約・最新情報は各劇場公式サイトでご確認ください。<br>
+  <button class="chip" id="reload" style="margin-top:8px">↻ 再読み込み</button>
+</footer>
+<script>
+let TH={}, SHOWS=[], DAYS=[], UPDATED="", FAILED=[];
+const VER=/^(IMAX|MX4D|4DX|ScreenX|Dolby|ドルビーシネマ|ドルビーアトモス)?(字幕版|吹替版)?$/;
+function splitTitle(t){
+  t=t.trim(); const i=t.lastIndexOf(" ");
+  if(i>0){const tail=t.slice(i+1); if(tail&&VER.test(tail)) return [t.slice(0,i),tail];}
+  return [t,""];
+}
+const ds=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const key=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+async function load(){
+  let data=null;
+  try{const r=await fetch("data.json?"+Date.now(),{cache:"no-store"}); data=await r.json();}
+  catch(e){try{const r=await fetch("data.json"); data=await r.json();}catch(e2){}}
+  if(!data){document.getElementById("main").innerHTML='<div class="empty">データを読み込めませんでした。通信状況を確認してください。</div>';document.getElementById("meta").textContent="";return;}
+  TH={};const colors={t:"var(--t)",p:"var(--p)",s:"var(--s)"};
+  for(const k in data.theaters) TH[k]={...data.theaters[k],color:colors[k]||"var(--acc)"};
+  const today=key(new Date());
+  SHOWS=data.shows.filter(x=>x.date>=today).map(x=>{const[b,v]=splitTitle(x.title);return{th:x.th,base:b,ver:v,day:x.date,times:x.times};});
+  DAYS=[...new Set(SHOWS.map(x=>x.day))].sort();
+  UPDATED=data.updated; FAILED=data.failed||[];
+  for(const k in TH) if(!(k in S.th)) S.th[k]=true;
+  if(!DAYS.includes(S.day)) S.day=DAYS[0];
+  const u=new Date(UPDATED);
+  document.getElementById("meta").textContent=`更新 ${u.getMonth()+1}/${u.getDate()} ${String(u.getHours()).padStart(2,"0")}:${String(u.getMinutes()).padStart(2,"0")}`+(DAYS.length?` ／ ${fmtShort(DAYS[0])}〜${fmtShort(DAYS[DAYS.length-1])}`:"")+(FAILED.length?` ／ ⚠ ${FAILED.map(k=>TH[k].short).join("・")}は前回データ`:"");
+  document.getElementById("srcs").innerHTML=Object.values(TH).map(t=>`<a href="${t.src}">${t.short}</a>`).join("・");
+  render();
+}
+const fmtShort=s=>{const d=ds(s);return `${d.getMonth()+1}/${d.getDate()}`};
+// ---- state ----
+const WD=["日","月","火","水","木","金","土"];
+const now=new Date();
+const todayD=key(now);
+let S={tab:"date",th:{t:true,p:true,s:true},day:todayD,hidePast:true,q:"",open:new Set()};
+try{const v=JSON.parse(localStorage.getItem("mvsched")||"null");if(v){S.tab=v.tab||S.tab;S.th=v.th||S.th;S.hidePast=v.hidePast??S.hidePast;}}catch(e){}
+function save(){try{localStorage.setItem("mvsched",JSON.stringify({tab:S.tab,th:S.th,hidePast:S.hidePast}));}catch(e){}}
+const toMin=t=>{const[h,m]=t.split(":").map(Number);return h*60+m};
+const nowMin=now.getHours()*60+now.getMinutes();
+const isPast=(d,t)=>d<todayD||(d===todayD&&toMin(t)<nowMin);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const wd=d=>ds(d).getDay();
+// ---- header ----
+function renderHeader(){
+  document.getElementById("tabs").innerHTML=
+    [["date","日付別"],["film","作品別"]].map(([k,l])=>`<button class="tab ${S.tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("");
+  document.getElementById("theaters").innerHTML=Object.entries(TH).map(([k,v])=>
+    `<button class="chip ${S.th[k]?"":"off"}" data-th="${k}"><span class="dot" style="background:${v.color}"></span>${v.short}</button>`).join("");
+  const dayRow=document.getElementById("days");
+  dayRow.style.display=S.tab==="date"?"flex":"none";
+  dayRow.innerHTML=DAYS.map(d=>{const w=wd(d);
+    return `<button class="day ${S.day===d?"on":""} ${w===6?"sat":w===0?"sun":""}" data-day="${d}">${fmtShort(d)}<small>${d===todayD?"今日":WD[w]}</small></button>`}).join("");
+}
+function timesHtml(d,times){
+  return times.map(t=>`<span class="tm ${isPast(d,t)?"past":""}">${t}</span>`).join("");
+}
+// ---- 日付別 ----
+function renderDate(){
+  const showHide=S.day===todayD;
+  let h=showHide?`<div class="tools"><label><input type="checkbox" id="hp" ${S.hidePast?"checked":""}>終了した回を隠す</label></div>`:"";
+  let any=false;
+  for(const th in TH){
+    if(!S.th[th])continue;
+    let rows=SHOWS.filter(x=>x.th===th&&x.day===S.day).map(x=>{
+      let ts=x.times; if(showHide&&S.hidePast) ts=ts.filter(t=>!isPast(x.day,t));
+      return {...x,ts};
+    }).filter(x=>x.ts.length);
+    rows.sort((a,b)=>toMin(a.ts[0])-toMin(b.ts[0]));
+    h+=`<div class="card"><div class="th"><span class="bar" style="background:${TH[th].color}"></span>${TH[th].name}<a href="${TH[th].url}">公式 ›</a></div>`;
+    if(!rows.length) h+=`<div class="empty">該当する上映はありません</div>`;
+    rows.forEach(x=>{any=true;h+=`<div class="film"><div class="ft">${esc(x.base)}${x.ver?`<span class="ver">${x.ver}</span>`:""}</div><div class="times">${timesHtml(x.day,x.ts)}</div></div>`;});
+    h+=`</div>`;
+  }
+  if(!Object.values(S.th).some(Boolean)) h+=`<div class="empty">映画館を1つ以上選択してください</div>`;
+  return h;
+}
+// ---- 作品別 ----
+function renderFilm(){
+  const films={};
+  SHOWS.forEach(x=>{if(!S.th[x.th])return;(films[x.base]??=[]).push(x);});
+  const q=S.q.trim().toLowerCase();
+  let names=Object.keys(films).filter(n=>!q||n.toLowerCase().includes(q));
+  const cnt=n=>films[n].reduce((a,x)=>a+x.times.length,0);
+  names.sort((a,b)=>cnt(b)-cnt(a));
+  let h=`<input type="search" id="q" placeholder="作品名で検索" value="${esc(S.q)}">`;
+  if(!names.length) h+=`<div class="empty">該当する作品はありません</div>`;
+  names.forEach(n=>{
+    const list=films[n], ths=[...new Set(list.map(x=>x.th))];
+    const open=S.open.has(n);
+    h+=`<div class="card ${open?"open":""}"><button class="fhead" data-film="${esc(n)}"><div><div class="n">${esc(n)}</div><div class="dots">${ths.map(t=>`<i style="background:${TH[t].color}"></i>`).join("")}</div></div><span class="c">${cnt(n)}回 ${open?"▲":"▼"}</span></button><div class="fbody">`;
+    if(open){
+      DAYS.forEach(d=>{
+        const ds=list.filter(x=>x.day===d);
+        if(!ds.length)return;
+        const w=wd(d);
+        h+=`<div class="dt">${fmtShort(d)}(${WD[w]})${d===todayD?" 今日":""}</div>`;
+        Object.keys(TH).forEach(th=>{
+          ds.filter(x=>x.th===th).forEach(x=>{
+            h+=`<div class="line"><div class="lb"><span class="dot" style="background:${TH[th].color}"></span>${TH[th].short}${x.ver?`<span class="ver">${x.ver}</span>`:""}</div><div class="times">${timesHtml(d,x.times)}</div></div>`;
+          });
+        });
+      });
+    }
+    h+=`</div></div>`;
+  });
+  return h;
+}
+function render(){
+  renderHeader();
+  document.getElementById("main").innerHTML=S.tab==="date"?renderDate():renderFilm();
+  const q=document.getElementById("q");
+  if(q){q.addEventListener("input",e=>{S.q=e.target.value;const pos=e.target.selectionStart;render();const n=document.getElementById("q");n.focus();n.setSelectionRange(pos,pos);});}
+  const hp=document.getElementById("hp");
+  if(hp) hp.addEventListener("change",e=>{S.hidePast=e.target.checked;save();render();});
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.tab){S.tab=b.dataset.tab;save();render();window.scrollTo(0,0);}
+  else if(b.dataset.th){S.th[b.dataset.th]=!S.th[b.dataset.th];save();render();}
+  else if(b.dataset.day){S.day=b.dataset.day;render();}
+  else if(b.id==="reload"){location.reload();}
+  else if(b.dataset.film){const n=b.dataset.film;S.open.has(n)?S.open.delete(n):S.open.add(n);render();}
+});
+render=(r=>()=>{if(DAYS.length||SHOWS.length)r();else renderHeader();})(render);
+load();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
