@@ -18,10 +18,10 @@ JST = dt.timezone(dt.timedelta(hours=9))
 
 THEATERS = {
     "t": {"name": "TOHOシネマズなんば", "short": "TOHOなんば",
-          "url": "https://www.tohotheater.jp/",
+          "url": "https://hlo.tohotheater.jp/net/schedule/032/TNPI2000J01.do",
           "src": "https://movie.jorudan.co.jp/theater/1001828/schedule/"},
     "p": {"name": "なんばパークスシネマ", "short": "パークス",
-          "url": "https://www.parkscinema.com/",
+          "url": "https://www.parkscinema.com/site/namba/",
           "src": "https://movie.jorudan.co.jp/theater/1001853/schedule/"},
     "s": {"name": "イオンシネマ シアタス心斎橋", "short": "シアタス",
           "url": "https://www.aeoncinema.com/cinema/shinsaibashi/",

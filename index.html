@@ -44,6 +44,7 @@ input[type=search]{width:100%;font:inherit;padding:9px 12px;border:1px solid var
 .ver{display:inline-block;font-size:10px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;color:var(--sub);vertical-align:1px}
 .times{display:flex;flex-wrap:wrap;gap:5px}
 .tm{font-variant-numeric:tabular-nums;font-size:13px;padding:3px 7px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
+a.tm{color:var(--ink);text-decoration:none}a.tm:active{background:var(--acc);color:#fff}
 .tm.past{color:var(--past);text-decoration:line-through}
 .fhead{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;width:100%;background:none;border:none;text-align:left}
 .fhead .n{font-weight:700;font-size:14px}
@@ -71,6 +72,7 @@ footer a{color:var(--sub)}
 </header>
 <main id="main"></main>
 <footer>
+  時刻をタップすると劇場公式の空席・予約ページが開きます。<br>
   データ出典：<span id="srcs"></span>（ジョルダン映画）。毎日自動更新。<br>
   上映時刻は変更される場合があります。予約・最新情報は各劇場公式サイトでご確認ください。<br>
   <button class="chip" id="reload" style="margin-top:8px">↻ 再読み込み</button>
@@ -127,8 +129,10 @@ function renderHeader(){
   dayRow.innerHTML=DAYS.map(d=>{const w=wd(d);
     return `<button class="day ${S.day===d?"on":""} ${w===6?"sat":w===0?"sun":""}" data-day="${d}">${fmtShort(d)}<small>${d===todayD?"今日":WD[w]}</small></button>`}).join("");
 }
-function timesHtml(d,times){
-  return times.map(t=>`<span class="tm ${isPast(d,t)?"past":""}">${t}</span>`).join("");
+function timesHtml(d,times,th){
+  const url=TH[th]&&TH[th].url;
+  return times.map(t=>isPast(d,t)?`<span class="tm past">${t}</span>`
+    :url?`<a class="tm" href="${url}" target="_blank" rel="noopener">${t}</a>`:`<span class="tm">${t}</span>`).join("");
 }
 // ---- 日付別 ----
 function renderDate(){
@@ -142,9 +146,9 @@ function renderDate(){
       return {...x,ts};
     }).filter(x=>x.ts.length);
     rows.sort((a,b)=>toMin(a.ts[0])-toMin(b.ts[0]));
-    h+=`<div class="card"><div class="th"><span class="bar" style="background:${TH[th].color}"></span>${TH[th].name}<a href="${TH[th].url}">公式 ›</a></div>`;
+    h+=`<div class="card"><div class="th"><span class="bar" style="background:${TH[th].color}"></span>${TH[th].name}<a href="${TH[th].url}" target="_blank" rel="noopener">空席・予約 ›</a></div>`;
     if(!rows.length) h+=`<div class="empty">該当する上映はありません</div>`;
-    rows.forEach(x=>{any=true;h+=`<div class="film"><div class="ft">${esc(x.base)}${x.ver?`<span class="ver">${x.ver}</span>`:""}</div><div class="times">${timesHtml(x.day,x.ts)}</div></div>`;});
+    rows.forEach(x=>{any=true;h+=`<div class="film"><div class="ft">${esc(x.base)}${x.ver?`<span class="ver">${x.ver}</span>`:""}</div><div class="times">${timesHtml(x.day,x.ts,th)}</div></div>`;});
     h+=`</div>`;
   }
   if(!Object.values(S.th).some(Boolean)) h+=`<div class="empty">映画館を1つ以上選択してください</div>`;
@@ -172,7 +176,7 @@ function renderFilm(){
         h+=`<div class="dt">${fmtShort(d)}(${WD[w]})${d===todayD?" 今日":""}</div>`;
         Object.keys(TH).forEach(th=>{
           ds.filter(x=>x.th===th).forEach(x=>{
-            h+=`<div class="line"><div class="lb"><span class="dot" style="background:${TH[th].color}"></span>${TH[th].short}${x.ver?`<span class="ver">${x.ver}</span>`:""}</div><div class="times">${timesHtml(d,x.times)}</div></div>`;
+            h+=`<div class="line"><div class="lb"><span class="dot" style="background:${TH[th].color}"></span>${TH[th].short}${x.ver?`<span class="ver">${x.ver}</span>`:""}</div><div class="times">${timesHtml(d,x.times,th)}</div></div>`;
           });
         });
       });
